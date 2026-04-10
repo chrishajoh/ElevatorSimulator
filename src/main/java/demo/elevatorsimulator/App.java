@@ -15,7 +15,7 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        Elevator model = new Elevator();
+        Elevator model = new Elevator(1, 1, 9);
         ElevatorController controller = new ElevatorController(model);
         ElevatorView view = new ElevatorView(controller);
 
