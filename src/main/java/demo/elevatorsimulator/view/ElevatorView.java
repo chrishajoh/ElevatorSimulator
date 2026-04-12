@@ -11,6 +11,7 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
@@ -72,22 +73,26 @@ public class ElevatorView {
         shaft.getChildren().addAll(elevatorGroup, floorLabel);
         shaft.setPrefSize(400, 600);
 
-        VBox buttonPanel = new VBox(10);
+        GridPane buttonGrid = new GridPane();
+        buttonGrid.setHgap(5);
+        buttonGrid.setVgap(5);
         for (FloorButton btn : controller.getButtons()) {
-            Button button = new Button("Floor " + btn.getFloor());
+            Button button = new Button(String.valueOf(btn.getFloor()));
+            button.setMinWidth(50);
             button.setOnAction(e -> {
                 btn.press();
                 animationQueue.add(btn.getFloor());
                 updateQueueDisplay();
                 if (!isAnimating) processNextInQueue();
             });
-            buttonPanel.getChildren().add(button);
+            int index = btn.getFloor() - 1;
+            buttonGrid.add(button, index % 3, index / 3);
         }
 
         Label queueTitle = new Label("Queue:");
-        VBox queuePanel = new VBox(5, queueTitle, queueDisplay);
+        VBox controlPanel = new VBox(10, buttonGrid, queueTitle, queueDisplay);
 
-        root.getChildren().addAll(shaft, buttonPanel, queuePanel);
+        root.getChildren().addAll(shaft, controlPanel);
     }
 
     public Node getRoot() {
@@ -107,15 +112,18 @@ public class ElevatorView {
             return;
         }
         isAnimating = true;
-        int floor = animationQueue.poll();
-        updateQueueDisplay();
+        int floor = animationQueue.peek();
         SequentialTransition sequence = new SequentialTransition(
             moveToFloor(floor),
             openDoors(),
             new PauseTransition(Duration.seconds(1)),
             closeDoors()
         );
-        sequence.setOnFinished(e -> processNextInQueue());
+        sequence.setOnFinished(e -> {
+            animationQueue.poll();
+            updateQueueDisplay();
+            processNextInQueue();
+        });
         sequence.play();
     }
 
