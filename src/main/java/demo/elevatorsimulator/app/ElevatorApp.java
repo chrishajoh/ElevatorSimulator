@@ -11,18 +11,46 @@ import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+/**
+ * Hovedklassen for heissimulatoren.
+ * <p>
+ * Starter JavaFX-applikasjonen og setter opp den grafiske representasjonen
+ * av heisen med dører. Kjører en automatisk sekvens der heisen beveger seg
+ * gjennom alle etasjer, åpner og lukker dørene på hver etasje.
+ * </p>
+ *
+ * @author Fredrik
+ * @version 1.0
+ */
 public class ElevatorApp extends Application {
 
+    /** Den grafiske representasjonen av heiskabinen. */
     private Rectangle elevator;
+
+    /** Venstre dør på heisen. */
     private Rectangle leftDoor;
+
+    /** Høyre dør på heisen. */
     private Rectangle rightDoor;
 
+    /** Etikett som viser gjeldende etasje. */
     private Label floorLabel;
 
+    /**
+     * Y-koordinater for hver etasje i scenen.
+     * Indeks 0 tilsvarer etasje 0 (bunn), indeks 5 tilsvarer etasje 5 (topp).
+     */
     private final int[] floors = {500, 400, 300, 200, 100, 0};
 
+    /** Gruppe som samler heis og dører slik at de beveger seg sammen. */
     private Group elevatorGroup;
 
+    /**
+     * Initialiserer og viser applikasjonens hovedvindu.
+     * Oppretter heisen, dørene og etasje-etiketten, og starter den automatiske kjøresekvensen.
+     *
+     * @param stage primærvinduet som JavaFX-plattformen leverer
+     */
     @Override
     public void start(Stage stage) {
 
@@ -64,7 +92,11 @@ public class ElevatorApp extends Application {
         runElevatorSequence();
     }
 
-    // Sekvens
+    /**
+     * Kjører den automatiske heissekvensen.
+     * Heisen beveger seg fra etasje 1 til etasje 5, stopper i hver etasje,
+     * åpner dørene, venter ett sekund, og lukker dørene igjen.
+     */
     private void runElevatorSequence() {
 
         SequentialTransition sequence = new SequentialTransition();
@@ -81,7 +113,13 @@ public class ElevatorApp extends Application {
         sequence.play();
     }
 
-    //  heisen beveger seg til ønsket etasje
+    /**
+     * Oppretter en animasjon som flytter heisen til angitt etasje.
+     * Oppdaterer etasje-etiketten når animasjonen er ferdig.
+     *
+     * @param floor etasjenummeret heisen skal flyttes til (0–5)
+     * @return en {@link TranslateTransition} som representerer bevegelsen
+     */
     private TranslateTransition moveToFloor(int floor) {
 
         double targetY = floors[floor];
@@ -96,7 +134,12 @@ public class ElevatorApp extends Application {
         return move;
     }
 
-    // Åpner dører
+    /**
+     * Oppretter en animasjon som åpner heisdørene.
+     * Venstre dør glir til venstre og høyre dør glir til høyre samtidig.
+     *
+     * @return en {@link ParallelTransition} som animerer begge dørene
+     */
     private ParallelTransition openDoors() {
 
         TranslateTransition left = new TranslateTransition(Duration.seconds(0.5), leftDoor);
@@ -108,7 +151,12 @@ public class ElevatorApp extends Application {
         return new ParallelTransition(left, right);
     }
 
-    //  Lukker dører
+    /**
+     * Oppretter en animasjon som lukker heisdørene.
+     * Begge dørene glir tilbake til sin opprinnelige posisjon samtidig.
+     *
+     * @return en {@link ParallelTransition} som animerer begge dørene
+     */
     private ParallelTransition closeDoors() {
 
         TranslateTransition left = new TranslateTransition(Duration.seconds(0.5), leftDoor);
@@ -120,11 +168,21 @@ public class ElevatorApp extends Application {
         return new ParallelTransition(left, right);
     }
 
-    //  kort pause
+    /**
+     * Oppretter en pause i animasjonssekvensen.
+     *
+     * @param seconds antall sekunder pausen skal vare
+     * @return en {@link PauseTransition} med angitt varighet
+     */
     private PauseTransition waitTime(int seconds) {
         return new PauseTransition(Duration.seconds(seconds));
     }
 
+    /**
+     * Inngangspunkt for applikasjonen.
+     *
+     * @param args kommandolinjeargumenter (brukes ikke)
+     */
     public static void main(String[] args) {
         launch();
     }
