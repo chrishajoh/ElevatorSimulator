@@ -1,93 +1,145 @@
 package demo.elevatorsimulator.view;
 
+/** @author Fredrik */
+
+import demo.elevatorsimulator.controller.ElevatorController;
+import demo.elevatorsimulator.model.FloorButton;
 import javafx.animation.*;
+import java.util.LinkedList;
+import java.util.Queue;
+import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Duration;
 
-/**
- * Håndterer den visuelle representasjonen av heisen og dens dører.
- * <p>
- * Klassen innkapsler animasjonslogikken for å flytte heisen mellom etasjer
- * samt åpne og lukke dørene ved hjelp av JavaFX-transisjoner.
- * </p>
- *
- * @author Fredrik
- * @version 1.0
- */
 public class ElevatorView {
 
-    /** Den grafiske representasjonen av heiskabinen. */
+    private final HBox root = new HBox(20);
+
     private Rectangle elevator;
-
-    /** Venstre dør på heisen. */
     private Rectangle leftDoor;
-
-    /** Høyre dør på heisen. */
     private Rectangle rightDoor;
+    private Label floorLabel;
+    private Group elevatorGroup;
 
-    /**
-     * Y-koordinater for hver etasje i scenen.
-     * Indeks 0 tilsvarer etasje 0 (bunn), indeks 5 tilsvarer etasje 5 (topp).
-     */
-    private final int[] floors = {500, 400, 300, 200, 100, 0};
+    private final int[] floors = {500, 440, 380, 320, 260, 200, 140, 80, 20};
 
-    /**
-     * Oppretter en ny {@code ElevatorView} med de angitte grafiske elementene.
-     *
-     * @param elevator  rektangel som representerer heiskabinen
-     * @param leftDoor  rektangel som representerer venstre dør
-     * @param rightDoor rektangel som representerer høyre dør
-     */
-    public ElevatorView(Rectangle elevator, Rectangle leftDoor, Rectangle rightDoor) {
-        this.elevator = elevator;
-        this.leftDoor = leftDoor;
-        this.rightDoor = rightDoor;
+    private final Queue<Integer> animationQueue = new LinkedList<>();
+    private boolean isAnimating = false;
+    private final VBox queueDisplay = new VBox(5);
+
+    public ElevatorView(ElevatorController controller) {
+        Pane shaft = new Pane();
+
+        Rectangle shaftBackground = new Rectangle(80, 580);
+        shaftBackground.setLayoutX(160);
+        shaftBackground.setLayoutY(10);
+        shaftBackground.setFill(Color.LIGHTGRAY);
+        shaftBackground.setStroke(Color.DARKGRAY);
+        shaft.getChildren().add(shaftBackground);
+
+        elevator = new Rectangle(80, 80);
+        elevator.setFill(Color.GRAY);
+
+        leftDoor = new Rectangle(40, 80);
+        rightDoor = new Rectangle(40, 80);
+        leftDoor.setFill(Color.DARKGRAY);
+        rightDoor.setFill(Color.DARKGRAY);
+        leftDoor.setX(0);
+        rightDoor.setX(40);
+
+        elevatorGroup = new Group(elevator, leftDoor, rightDoor);
+        elevatorGroup.setLayoutX(160);
+        elevatorGroup.setLayoutY(floors[0]);
+
+        floorLabel = new Label("Floor: 1");
+        floorLabel.setLayoutX(10);
+        floorLabel.setLayoutY(20);
+
+        for (int i = 0; i < floors.length; i++) {
+            Label floorNumber = new Label(String.valueOf(i + 1));
+            floorNumber.setLayoutX(130);
+            floorNumber.setLayoutY(floors[i] + 30);
+            shaft.getChildren().add(floorNumber);
+        }
+
+        shaft.getChildren().addAll(elevatorGroup, floorLabel);
+        shaft.setPrefSize(400, 600);
+
+        VBox buttonPanel = new VBox(10);
+        for (FloorButton btn : controller.getButtons()) {
+            Button button = new Button("Floor " + btn.getFloor());
+            button.setOnAction(e -> {
+                btn.press();
+                animationQueue.add(btn.getFloor());
+                updateQueueDisplay();
+                if (!isAnimating) processNextInQueue();
+            });
+            buttonPanel.getChildren().add(button);
+        }
+
+        Label queueTitle = new Label("Queue:");
+        VBox queuePanel = new VBox(5, queueTitle, queueDisplay);
+
+        root.getChildren().addAll(shaft, buttonPanel, queuePanel);
     }
 
-    /**
-     * Animerer heisen til å flytte seg til angitt etasje.
-     * Oppdaterer Y-posisjonen til heisen og begge dørene når animasjonen er ferdig.
-     *
-     * @param floor etasjenummeret heisen skal flyttes til (0–5)
-     */
-    public void moveToFloor(int floor) {
-        TranslateTransition move = new TranslateTransition(Duration.seconds(2), elevator);
-        move.setToY(floors[floor] - elevator.getY());
-
-        move.setOnFinished(e -> {
-            elevator.setY(floors[floor]);
-            leftDoor.setY(floors[floor]);
-            rightDoor.setY(floors[floor]);
-        });
-
-        move.play();
+    public Node getRoot() {
+        return root;
     }
 
-    /**
-     * Animerer åpningen av heisdørene.
-     * Venstre dør glir til venstre og høyre dør glir til høyre samtidig.
-     */
-    public void openDoors() {
-        TranslateTransition left = new TranslateTransition(Duration.seconds(1), leftDoor);
+    private void updateQueueDisplay() {
+        queueDisplay.getChildren().clear();
+        for (int floor : animationQueue) {
+            queueDisplay.getChildren().add(new Label("Floor " + floor));
+        }
+    }
+
+    private void processNextInQueue() {
+        if (animationQueue.isEmpty()) {
+            isAnimating = false;
+            return;
+        }
+        isAnimating = true;
+        int floor = animationQueue.poll();
+        updateQueueDisplay();
+        SequentialTransition sequence = new SequentialTransition(
+            moveToFloor(floor),
+            openDoors(),
+            new PauseTransition(Duration.seconds(1)),
+            closeDoors()
+        );
+        sequence.setOnFinished(e -> processNextInQueue());
+        sequence.play();
+    }
+
+    private TranslateTransition moveToFloor(int floor) {
+        double targetY = floors[floor - 1];
+        TranslateTransition move = new TranslateTransition(Duration.seconds(2), elevatorGroup);
+        move.setToY(targetY - floors[0]);
+        move.setOnFinished(e -> floorLabel.setText("Floor: " + floor));
+        return move;
+    }
+
+    private ParallelTransition openDoors() {
+        TranslateTransition left = new TranslateTransition(Duration.seconds(0.5), leftDoor);
         left.setToX(-20);
-
-        TranslateTransition right = new TranslateTransition(Duration.seconds(1), rightDoor);
+        TranslateTransition right = new TranslateTransition(Duration.seconds(0.5), rightDoor);
         right.setToX(20);
-
-        new ParallelTransition(left, right).play();
+        return new ParallelTransition(left, right);
     }
 
-    /**
-     * Animerer lukkingen av heisdørene.
-     * Begge dørene glir tilbake til sin opprinnelige posisjon samtidig.
-     */
-    public void closeDoors() {
-        TranslateTransition left = new TranslateTransition(Duration.seconds(1), leftDoor);
+    private ParallelTransition closeDoors() {
+        TranslateTransition left = new TranslateTransition(Duration.seconds(0.5), leftDoor);
         left.setToX(0);
-
-        TranslateTransition right = new TranslateTransition(Duration.seconds(1), rightDoor);
+        TranslateTransition right = new TranslateTransition(Duration.seconds(0.5), rightDoor);
         right.setToX(0);
-
-        new ParallelTransition(left, right).play();
+        return new ParallelTransition(left, right);
     }
 }

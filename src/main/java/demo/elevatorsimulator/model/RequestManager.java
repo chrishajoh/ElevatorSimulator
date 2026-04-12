@@ -1,21 +1,6 @@
 package demo.elevatorsimulator.model;
-/*
- * Handles incoming floor requests in the elevator system.
- * <p>
- * The class owns the request queue and provides thread-safe insertion,
- * retrieval, waiting and signaling by using {@code ReentrantLock}
- * and {@code Condition}.
- * </p>
- *
- * <p>
- * The purpose of the class is to separate request handling from the
- * elevator's movement logic, giving each class a clearer responsibility.
- * </p>
- *
- * @author Amalie Leguén
- * @version 1.0 (2026-04-08)
- * @since 1.0
- */
+
+/** @author Amalie Leguén */
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -33,23 +18,11 @@ public class RequestManager {
     private final int maxFloor;
     private boolean running = true;
 
-    /**
-     * Creates a new request manager for a valid floor range.
-     *
-     * @param minFloor the lowest valid floor
-     * @param maxFloor the highest valid floor
-     */
     public RequestManager(int minFloor, int maxFloor) {
         this.minFloor = minFloor;
         this.maxFloor = maxFloor;
     }
 
-    /**
-     * Adds a new floor request to the queue.
-     * If a thread is waiting for the next request, it is signaled.
-     *
-     * @param floor the requested floor
-     */
     public void addRequest(int floor) {
         lock.lock();
         try {
@@ -67,12 +40,6 @@ public class RequestManager {
         }
     }
 
-    /**
-     * Waits until the next request becomes available in the queue.
-     *
-     * @return the next target floor, or {@code -1} if the manager has been stopped
-     * @throws InterruptedException if the thread is interrupted while waiting
-     */
     public int waitForNextRequest() throws InterruptedException {
         lock.lock();
         try {
@@ -93,11 +60,6 @@ public class RequestManager {
         }
     }
 
-    /**
-     * Returns a snapshot of the pending requests.
-     *
-     * @return a copy of the pending request queue
-     */
     public List<Integer> getPendingRequestsSnapshot() {
         lock.lock();
         try {
@@ -107,10 +69,6 @@ public class RequestManager {
         }
     }
 
-    /**
-     * Stops the request manager in a controlled manner.
-     * Any waiting thread is signaled so it can terminate safely.
-     */
     public void stop() {
         lock.lock();
         try {
@@ -121,11 +79,6 @@ public class RequestManager {
         }
     }
 
-    /**
-     * Returns whether the request manager is still running.
-     *
-     * @return {@code true} if the manager is running, otherwise {@code false}
-     */
     public boolean isRunning() {
         lock.lock();
         try {
