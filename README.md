@@ -22,17 +22,16 @@ src/main/java/demo/elevatorsimulator/
 ├── controller/
 │   └── ElevatorController.java       # Kobler knappene til heismodellen
 └── view/
-    └── ElevatorView.java             # JavaFX-grensesnitt og knapper
+    └── ElevatorView.java             # JavaFX-grensesnitt med heissjakt, animasjoner og køvisning
 ```
 
 ## Arkitektur
 
 Prosjektet følger MVC-arkitektur og bruker multitråding:
 
-- **Model** — `Elevator` implementerer `Runnable` og kjører på en egen tråd. `RequestManager` håndterer køen trådsikkert
-  med `ReentrantLock` og `Condition`.
+- **Model** — `Elevator` implementerer `Runnable` og kjører på en egen tråd. `RequestManager` håndterer køen trådsikkert med `ReentrantLock` og `Condition`.
 - **Controller** — Oppretter knappene og kobler dem til `Elevator.addRequest()`.
-- **View** — Bygger JavaFX-grensesnittet og binder knappene til kontrolleren.
+- **View** — Bygger JavaFX-grensesnittet med en animert heissjakt, døranimasjoner og en køvisning. Forespørsler behandles én om gangen via en intern animasjonskø.
 
 ## Kjøre applikasjonen
 
